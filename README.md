@@ -2,6 +2,94 @@
 
 A standalone client monitoring system to track external scripts, cron jobs, and services connecting to the server. The system provides API endpoints for client registration and heartbeat updates, plus a web dashboard to view all connected clients with their status.
 
+**This repository is the dashboard half.** The API it talks to lives in
+[`signlab_client_monitor_api`](https://github.com/Amsterdam-Humanities-Labs/signlab_client_monitor_api).
+This README documents both, because they are only useful together; the API repo
+has its own README covering its schema, its metrics collector and how it is
+installed.
+
+## What the dashboard is
+
+Five files and no build step. `index.php` is a login form that checks a
+username and password against the `users` table and sets a PHP session;
+`view.php` is the dashboard itself, gated on that session; `js/dashboard.js`
+(~1,400 lines) does all the work in the browser against
+`/client_monitor_api/api.php`.
+
+It refreshes every 30 seconds with a visible countdown, and offers two views —
+a flat table, and clients grouped by source IP as cards — with the choice
+remembered in `localStorage`. Per client it shows the derived status, the time
+since the last heartbeat, and the registered interval; each card can expand to
+Chart.js line charts of the last week of CPU, I/O wait and disk metrics, pulled
+from `get_metrics`. Clients can be edited or deleted from here.
+
+Three endpoints in `api/` are the dashboard's own, and are **not** part of the
+client monitor API. They read the `CameraRecords` table directly and describe
+studio capture rather than script health:
+
+- `live_status.php` — today's capture count and the time of the most recent one
+- `camera_records.php` — the 50 newest capture rows, polled for a live feed
+  with in-page video playback
+- `transcription_stats.php` — per-day capture and transcription counts, cached
+  to `/tmp/transcription_stats_cache.json` for six hours because the query is
+  expensive
+
+## Where it runs
+
+The **signcollect core server** (the production VPS), at
+`/web/client_monitor_dashboard`, reachable as
+`https://signcollect.nl/client_monitor_dashboard/`. It expects the API to be at
+`/client_monitor_api/` on the same origin — `js/dashboard.js` hardcodes that
+path as `API_BASE`.
+
+It is **not deployed to the demo hosts** (`dev2`, docroot `/web`; `dev-1`,
+docroot `/srv/signcollect/web`): neither this repository nor the API has a row
+in `interface_deploy/scripts/repos.tsv`, so a demo host has neither half.
+
+## Status
+
+**Production.** Small, stable, and in daily use for watching the cron fleet.
+
+`claude.md` in the root is a short orientation note for AI assistants and is
+not user documentation.
+
+## How to deploy it
+
+Not through `repos.tsv` — the deploy toolchain in
+`signlab_signcollect-stack`'s `interface_deploy/` only knows how to map a
+repository onto `<docroot>/<directory>`, and neither half of the client monitor
+is part of the interface it deploys. Place the tree at
+`/web/client_monitor_dashboard` on the production host, ensure the API is
+installed beside it at `/web/client_monitor_api`, and make sure `cache/`-style
+writes are not needed — this side writes nothing except `php_errors.log`.
+
+TODO: confirm how the production copy is updated; no script in
+`interface_deploy/` touches it.
+
+## Configuration
+
+Nothing host-specific is in git, and the dashboard does not carry a config file
+of its own:
+
+| What | Where it comes from |
+|---|---|
+| database credentials | `<docroot>/mysql_config.php` — the docroot-wide credentials file, gitignored everywhere and denied over HTTP by Apache. `index.php` reaches it as `../mysql_config.php`; the three `api/*.php` files hardcode `/web/mysql_config.php`. That absolute path is why this component would not work under a docroot other than `/web` without changes — the rest of the estate resolves paths through `signcollect-lib`'s `sc_paths.php` shim instead. |
+| logins | Rows in the `users` table of `admin_gebarenoverleg`. There is no user management here; passwords are compared as stored. |
+| API location | `API_BASE` in `js/dashboard.js`, `/client_monitor_api/api.php`. |
+| sessions | PHP sessions with a one-year cookie lifetime, `secure` + `httponly` + `SameSite=Lax`, so the page requires HTTPS. |
+
+## Dependencies
+
+- **`signlab_client_monitor_api`** — the other half. Every client, status,
+  statistic and metric on the page comes from it over HTTP.
+- **MySQL `admin_gebarenoverleg`** — `client_monitors` and `client_metrics`
+  (through the API), plus `users` for login and `CameraRecords` for the three
+  local endpoints.
+- **`signlab_pythonCron`** — indirectly: its `checkDisk.py`,
+  `rclone_monitor.py` and `sync_mocap_files.py` are among the clients listed
+  here, and its metrics collector supplies the server charts.
+- **Bootstrap 5 and Chart.js**, both from a CDN at page load.
+
 ## Features
 
 - **Client Registration**: Register external scripts/services for monitoring
