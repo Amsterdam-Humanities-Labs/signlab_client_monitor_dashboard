@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/../sc_paths.php';
 require_once sc_path('mysql_config.php');
 

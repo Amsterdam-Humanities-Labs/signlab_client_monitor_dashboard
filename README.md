@@ -27,7 +27,7 @@ Production.
 | API location | `API_BASE` in `js/dashboard.js` |
 | Sessions | 1-year cookie, `secure` + `httponly` + `SameSite=Lax`, so HTTPS only |
 
-Auth is tracked in [stack#31](https://github.com/Amsterdam-Humanities-Labs/signlab_signcollect-stack/issues/31): the `api/*.php` files have no session check and the API itself is open.
+Auth ([stack#31](https://github.com/Amsterdam-Humanities-Labs/signlab_signcollect-stack/issues/31)): `api/*.php` answer 401 without the dashboard login (`api/auth.php`). The API's read/edit/delete actions check the same session; its ingestion actions stay open.
 
 ## Dependencies
 - `signlab_client_monitor_api` (all client, stats and metrics data).
