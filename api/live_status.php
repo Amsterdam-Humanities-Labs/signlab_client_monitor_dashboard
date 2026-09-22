@@ -1,5 +1,6 @@
 <?php
-require_once '/web/mysql_config.php';
+require_once __DIR__ . '/../sc_paths.php';
+require_once sc_path('mysql_config.php');
 
 header('Content-Type: application/json');
 

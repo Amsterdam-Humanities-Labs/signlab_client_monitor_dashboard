@@ -22,7 +22,7 @@ Production.
 ## Configuration
 | What | Where |
 |---|---|
-| DB credentials | docroot `mysql_config.php`: `index.php` uses `../mysql_config.php`, `api/*.php` hardcode `/web/mysql_config.php` |
+| DB credentials | docroot `mysql_config.php`: `index.php` uses `../mysql_config.php`, `api/*.php` use `<root>/mysql_config.php` via vendored `sc_paths.php` (from signlab_signcollect-lib; edit it there): `SC_WEB_ROOT`, default `/web` |
 | Logins | rows in `users`; passwords compared as stored |
 | API location | `API_BASE` in `js/dashboard.js` |
 | Sessions | 1-year cookie, `secure` + `httponly` + `SameSite=Lax`, so HTTPS only |
