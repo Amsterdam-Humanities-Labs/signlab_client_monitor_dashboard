@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/auth.php';
 require_once '/web/mysql_config.php';
 
 header('Content-Type: application/json');
